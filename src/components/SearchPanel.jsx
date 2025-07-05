@@ -4,7 +4,7 @@ import { IoMdClose } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
 
 // Example options
-const countyOptions = ["County", "Alameda", "Los Angeles", "Sacramento", "San Diego"];
+const countyOptions = ["County", "Alameda", "Los Angeles", "Sacramento", "San Diego", "Orange", "San Francisco"];
 const insuranceOptions = [
   "Insurance",                             
   "Private",
@@ -12,7 +12,7 @@ const insuranceOptions = [
   "MediCal FFS",
   "Other"
 ];
-const cwOptions = ["Child Welfare", "Option 1", "Option 2", "Option 3"];
+const cwOptions = ["Child Welfare", "CWS", "Probation", "Mental Health", "Education", "Regional Center"];
 
 const filterChips = [
   "All",
@@ -20,7 +20,10 @@ const filterChips = [
   "Probation",
   "Behavioral Health (BH)",
   "Developmental Services",
-  "Education"
+  "Education",
+  "Crisis Services",
+  "Placement Options",
+  "Support Services"
 ];
 
 const buttonTextStyle = {
@@ -30,83 +33,6 @@ const buttonTextStyle = {
   lineHeight: '100%',
   letterSpacing: '0%',
   textTransform: 'capitalize'
-};
-
-// Custom dropdown using div/ul
-const CustomDropdown = ({ options, value, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef();
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  // Determine border color
-  const borderColor = open ? "#005CB9" : "#bfc6ea";
-
-  return (
-    <div ref={ref} className="relative flex-1">
-      <button
-        type="button"
-        className={`
-          min-w-full rounded-xl bg-white
-          flex justify-between items-center
-          px-3 py-2 text-[14px] sm:text-[14px] md:text-[15px]
-          focus:outline-none whitespace-nowrap min-h-[44px]
-          transition-colors duration-150
-        `}
-        style={{
-          fontFamily: 'Montserrat, sans-serif',
-          fontWeight: 500,
-          fontSize: '14px',
-          lineHeight: '100%',
-          letterSpacing: '0%',
-          textTransform: 'capitalize',
-          border: `2px solid ${borderColor}`,
-        }}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="truncate">{value}</span>
-        <span className="ml-2 flex-shrink-0">
-          <div className={`transform transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
-            <svg width="14" height="10" viewBox="0 0 24 16" fill="none">
-              <polygon points="12,14 4,6 20,6" fill="#3B4A9F"/>
-            </svg>
-          </div>
-        </span>
-      </button>
-      {open && (
-        <ul
-          className={`
-            absolute left-0 mt-1 w-full bg-white border border-[#bfc6ea] rounded-xl shadow z-50
-            text-[13px] sm:text-[14px] md:text-[15px]
-            max-h-56 overflow-y-auto
-          `}
-        >
-          {options.map((opt) => (
-            <li
-              key={opt}
-              className={`
-                px-3 py-2 cursor-pointer hover:bg-blue-100 transition
-                ${opt === value ? "bg-blue-50 font-semibold" : ""}
-              `}
-              onClick={() => {
-                onChange(opt);
-                setOpen(false);
-              }}
-            >
-              {opt}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
 };
 
 const SearchPanel = ({ onSearch }) => {
@@ -146,10 +72,9 @@ const SearchPanel = ({ onSearch }) => {
     }
   }, []);
 
-  // Navigate to full decision tree
-  const startDecisionTree = (e) => {
+  // Navigate to decision tree
+  const goToDecisionTree = (e) => {
     e.preventDefault();
-    console.log('Navigating to decision tree...'); // Debug log
     navigate('/decision-tree');
   };
 
@@ -345,13 +270,13 @@ const SearchPanel = ({ onSearch }) => {
       <div className="w-full md:w-[80%] mb-4">
         <div className="bg-white rounded-xl border-2 border-[#015AB8] p-6 text-center">
           <h3 className="text-xl font-semibold text-[#015AB8] mb-3">
-            Get Personalized Resources
+            🎯 Get Personalized Resources
           </h3>
           <p className="text-gray-600 mb-4">
-            Answer 4 quick questions to get resources tailored to your specific needs and system affiliation.
+            Complete the 6-question decision tree to get resources tailored specifically to your system, role, and needs.
           </p>
           
-          {/* Quick Tags */}
+          {/* Enhanced Quick Tags */}
           <div className="flex flex-wrap justify-center gap-2 mb-4">
             <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
               #system-affiliation
@@ -365,14 +290,20 @@ const SearchPanel = ({ onSearch }) => {
             <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
               #target-population
             </span>
+            <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
+              #geographic-scope
+            </span>
+            <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
+              #complexity-level
+            </span>
           </div>
 
           <button
-            onClick={startDecisionTree}
+            onClick={goToDecisionTree}
             className="bg-[#015AB8] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#014a9f] transition-colors cursor-pointer"
             style={{ border: 'none', outline: 'none' }}
           >
-            Start Decision Tree (4 Questions)
+            {userPreferences ? 'Update My Preferences (6 Questions)' : 'Start Decision Tree (6 Questions)'}
           </button>
           
           {userPreferences && (
@@ -383,16 +314,16 @@ const SearchPanel = ({ onSearch }) => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Enhanced Filters */}
       <div className="md:w-[80%] bg-[#f6f8ff] rounded-xl p-4 shadow flex flex-col gap-3 sm:w-full">
         {/* Dropdowns */}
         <div className="flex gap-4 w-full flex-col sm:flex-row">
           <MultiSelectDropdown options={countyOptions} value={county} setValue={setCounty} defaultOption="County" />
           <MultiSelectDropdown options={insuranceOptions} value={insurance} setValue={setInsurance} defaultOption="Insurance" />
-          <MultiSelectDropdown options={cwOptions} value={cw} setValue={setCw} defaultOption="Child Welfare" />
+          <MultiSelectDropdown options={cwOptions} value={cw} setValue={setCw} defaultOption="System" />
         </div>
         
-        {/* Search Bar */}
+        {/* Enhanced Search Bar */}
         <div className={`flex items-center rounded-lg px-4 py-4 bg-white transition-all duration-150
           ${isActive ? "border-[#005CB9]" : "border-[#B7B9EA]"}
         `}
@@ -404,7 +335,7 @@ const SearchPanel = ({ onSearch }) => {
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Search resources, services, placements..."
+            placeholder="Search resources, services, placements, programs..."
             className={`flex-1 bg-white outline-none border-none shadow-none focus:ring-0 text-gray-700 transition-all duration-150`}
             style={{ boxShadow: "none" }}
             value={searchInput}
@@ -420,7 +351,7 @@ const SearchPanel = ({ onSearch }) => {
           )}
         </div>
 
-        {/* Filter Chips with Navigation Tags */}
+        {/* Enhanced Filter Chips with More Navigation Tags */}
         <div className="flex flex-wrap justify-center gap-2 mt-1 pb-2">
           {filterChips.map((chip, idx) => (
             <button
@@ -434,63 +365,52 @@ const SearchPanel = ({ onSearch }) => {
                 }`}
             >
               {chip}
-              {/* Navigation tags */}
+              {/* Enhanced Navigation tags */}
               <span className="sr-only">
-                {chip === "Child Welfare (CW)" && "#child-welfare #cws #foster-care #family-services"}
-                {chip === "Probation" && "#probation #juvenile-justice #court #supervision"}
-                {chip === "Behavioral Health (BH)" && "#mental-health #behavioral-health #therapy #counseling"}
-                {chip === "Developmental Services" && "#developmental #regional-center #disabilities #special-needs"}
-                {chip === "Education" && "#education #school #special-education #academic-support"}
+                {chip === "Child Welfare (CW)" && "#child-welfare #cws #foster-care #family-services #rfa #tah"}
+                {chip === "Probation" && "#probation #juvenile-justice #court #supervision #detention"}
+                {chip === "Behavioral Health (BH)" && "#mental-health #behavioral-health #therapy #counseling #crisis"}
+                {chip === "Developmental Services" && "#developmental #regional-center #disabilities #special-needs #autism"}
+                {chip === "Education" && "#education #school #special-education #academic-support #iep"}
+                {chip === "Crisis Services" && "#crisis #emergency #urgent #intervention #stabilization"}
+                {chip === "Placement Options" && "#placement #residential #group-home #foster #housing"}
+                {chip === "Support Services" && "#support #assistance #resources #programs #services"}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Additional Navigation Tags */}
+        {/* Enhanced Navigation Tags */}
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-2">Popular searches:</p>
           <div className="flex flex-wrap justify-center gap-2">
-            <button 
-              onClick={() => setSearchInput('placement')}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              #placement
-            </button>
-            <button 
-              onClick={() => setSearchInput('services')}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              #services
-            </button>
-            <button 
-              onClick={() => setSearchInput('support')}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              #support
-            </button>
-            <button 
-              onClick={() => setSearchInput('youth')}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              #youth
-            </button>
-            <button 
-              onClick={() => setSearchInput('family')}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              #family
-            </button>
-            <button 
-              onClick={() => setSearchInput('crisis')}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              #crisis
-            </button>
+            {[
+              { label: '#placement', search: 'placement' },
+              { label: '#services', search: 'services' },
+              { label: '#support', search: 'support' },
+              { label: '#youth', search: 'youth' },
+              { label: '#family', search: 'family' },
+              { label: '#crisis', search: 'crisis' },
+              { label: '#rfa', search: 'rfa' },
+              { label: '#tah', search: 'tah' },
+              { label: '#wrap', search: 'wrap' },
+              { label: '#cft', search: 'cft' },
+              { label: '#isfc', search: 'isfc' },
+              { label: '#respite', search: 'respite' }
+            ].map((tag, index) => (
+              <button 
+                key={index}
+                onClick={() => setSearchInput(tag.search)}
+                className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                {tag.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Clear All Button moved outside */}
+      {/* Clear All Button */}
       <div className="w-[100%] sm:w-[80%] flex justify-end mt-2 ">
         <button
           onClick={clearAll}

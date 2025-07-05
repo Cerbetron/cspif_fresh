@@ -6,7 +6,7 @@ import DecisionTree from '../pages/DecisionTree'
 const AppRoutes = () => {
   return (
     <Routes>
-        <Route path="/" element={<Home/>} />
+        <Route path="/" element={<DecisionTree/>} />
         <Route path="/resources" element={<Home/>} />
         <Route path="/decision-tree" element={<DecisionTree/>} />
     </Routes>
