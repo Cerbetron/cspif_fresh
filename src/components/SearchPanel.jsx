@@ -119,23 +119,7 @@ const SearchPanel = ({ onSearch }) => {
   const [isActive, setIsActive] = useState(false);
   const searchInputRef = useRef();
 
-  // Decision Tree state
-  const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
-  const [expandedQuestions, setExpandedQuestions] = useState({});
-  const [decisionTreeAnswers, setDecisionTreeAnswers] = useState({});
-  
-  // Dialog state for "Other" option
-  const [showOtherDialog, setShowOtherDialog] = useState(false);
-  const [currentQuestionId, setCurrentQuestionId] = useState(null);
-  const [otherInputValue, setOtherInputValue] = useState('');
-
   // Cookie utilities
-  const setCookie = (name, value, days = 30) => {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-    document.cookie = `${name}=${JSON.stringify(value)};expires=${expires.toUTCString()};path=/`;
-  };
-
   const getCookie = (name) => {
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
@@ -154,112 +138,17 @@ const SearchPanel = ({ onSearch }) => {
   };
 
   // Load saved decision tree answers
+  const [userPreferences, setUserPreferences] = useState(null);
   useEffect(() => {
     const savedAnswers = getCookie('decisionTreeAnswers');
     if (savedAnswers) {
-      setDecisionTreeAnswers(savedAnswers);
+      setUserPreferences(savedAnswers);
     }
   }, []);
-
-  // Decision Tree data
-  const decisionTreeQuestions = [
-    {
-      id: 1,
-      category: "Demographic",
-      question: "What system are you affiliated with?",
-      options: [
-        "Child Welfare Services (CWS)",
-        "Behavioral Health (BH)",
-        "Education",
-        "Probation",
-        "Regional center",
-        "Community partner",
-        "Other"
-      ]
-    },
-    {
-      id: 2,
-      category: "Demographic",
-      question: "What role do you most closely identify with?",
-      options: [
-        "Direct Services",
-        "Leadership/Management",
-        "Fiscal",
-        "Other"
-      ]
-    }
-  ];
-
-  // Toggle decision tree visibility
-  const toggleDecisionTree = () => {
-    setDecisionTreeOpen(!decisionTreeOpen);
-  };
 
   // Navigate to full decision tree
   const startDecisionTree = () => {
     navigate('/decision-tree');
-  };
-
-  // Toggle question expansion
-  const toggleQuestion = (questionId) => {
-    setExpandedQuestions(prev => ({
-      ...prev,
-      [questionId]: !prev[questionId]
-    }));
-  };
-
-  // Handle answer selection - allow toggle functionality
-  const handleAnswerSelect = (questionId, option) => {
-    // If "Other" is selected, show inline input
-    if (option === "Other") {
-      setCurrentQuestionId(questionId);
-      setOtherInputValue('');
-      setDecisionTreeAnswers(prev => ({
-        ...prev,
-        [questionId]: option
-      }));
-      return;
-    }
-
-    setDecisionTreeAnswers(prev => {
-      const currentAnswer = prev[questionId];
-      
-      // If the same option is clicked again, unselect it
-      if (currentAnswer === option) {
-        const newAnswers = { ...prev };
-        delete newAnswers[questionId]; // Remove the answer completely
-        setCookie('decisionTreeAnswers', newAnswers);
-        return newAnswers;
-      } else {
-        // Otherwise, select the new option
-        const newAnswers = {
-          ...prev,
-          [questionId]: option
-        };
-        setCookie('decisionTreeAnswers', newAnswers);
-        return newAnswers;
-      }
-    });
-  };
-
-  // Handle "Other" dialog submission
-  const handleOtherSubmit = () => {
-    if (otherInputValue.trim()) {
-      const newAnswers = {
-        ...decisionTreeAnswers,
-        [currentQuestionId]: `Other: ${otherInputValue.trim()}`
-      };
-      setDecisionTreeAnswers(newAnswers);
-      setCookie('decisionTreeAnswers', newAnswers);
-    }
-    setCurrentQuestionId(null);
-    setOtherInputValue('');
-  };
-
-  // Handle "Other" dialog cancel
-  const handleOtherCancel = () => {
-    setCurrentQuestionId(null);
-    setOtherInputValue('');
   };
 
   // Multi-select dropdown logic
@@ -433,171 +322,6 @@ const SearchPanel = ({ onSearch }) => {
     }
   };
 
-  // Decision Tree Component
-  const DecisionTree = () => (
-    <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-6">
-      {/* Decision Tree Header */}
-      <div 
-        className="flex items-center justify-center p-4 cursor-pointer bg-[#E2E4FB] relative"
-        onClick={toggleDecisionTree}
-      >
-        <h3 
-          className="text-[#333]" 
-          style={{ 
-            fontFamily: 'Open Sans, sans-serif',
-            fontWeight: 600,
-            fontSize: '20px',
-            lineHeight: '100%',
-            letterSpacing: '0%',
-            textTransform: 'uppercase'
-          }}
-        >
-          DECISION TREE
-        </h3>
-        <div className="ml-5">
-          <div className={`transform transition-transform duration-200 ${decisionTreeOpen ? '' : 'rotate-180'}`}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21.7852 19H10.1955C9.13619 19 8.5754 17.7102 9.38544 16.9731L15.2426 11.3225C15.7411 10.8925 16.4888 10.8925 16.925 11.3225L22.6576 16.9731C23.4053 17.7102 22.8445 19 21.7852 19Z" fill="#015AB8"/>
-              <path d="M16 31C7.73077 31 1 24.2692 1 16C1 7.73077 7.73077 1 16 1C24.2692 1 31 7.73077 31 16C31 24.2692 24.2692 31 16 31ZM16 1.76923C8.15385 1.76923 1.76923 8.15385 1.76923 16C1.76923 23.8462 8.15385 30.2308 16 30.2308C23.8462 30.2308 30.2308 23.8462 30.2308 16C30.2308 8.15385 23.8462 1.76923 16 1.76923Z" fill="#015AB8"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* Decision Tree Content */}
-      {decisionTreeOpen && (
-        <div className="bg-white px-6 py-6">
-          <div className="max-w-6xl mx-auto space-y-4">
-            {/* Start Full Decision Tree Button */}
-            <div className="text-center mb-6">
-              <button
-                onClick={startDecisionTree}
-                className="bg-[#015AB8] text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-[#014a9f] transition-colors"
-              >
-                Start Full Decision Tree
-              </button>
-              <p className="text-gray-600 mt-2 text-sm">
-                Get personalized resource recommendations based on your specific needs
-              </p>
-            </div>
-
-            {/* Quick Preview Questions */}
-            <div className="border-t pt-4">
-              <h4 className="text-lg font-semibold text-[#333] mb-4">Quick Preview:</h4>
-              {decisionTreeQuestions.map((q, index) => {
-                const questionNumber = index + 1;
-                
-                return (
-                  <div key={q.id} className="mb-4">
-                    {/* Question Container */}
-                    <div 
-                      className={`transition-all duration-200 ${
-                        expandedQuestions[q.id] 
-                          ? 'bg-[#E2E4FB] border-2 border-[#3B82F6] rounded-lg' 
-                          : 'bg-transparent'
-                      }`}
-                    >
-                      {/* Question Header */}
-                      <div 
-                        className="flex items-start justify-between p-4 cursor-pointer"
-                        onClick={() => toggleQuestion(q.id)}
-                      >
-                        <div className="flex-1">
-                          <span 
-                            className="text-[#333]" 
-                            style={{ 
-                              fontFamily: 'Open Sans, sans-serif',
-                              fontWeight: 400,
-                              fontSize: '16px',
-                              lineHeight: '115%',
-                              letterSpacing: '1%'
-                            }}
-                          >
-                            {questionNumber}. {q.question}
-                          </span>
-                        </div>
-                        <div className={`transform transition-transform duration-200 ml-4 flex-shrink-0 ${expandedQuestions[q.id] ? '' : 'rotate-180'}`}>
-                          <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M0 7.38086L8 -0.000279427L16 7.38086H0Z" fill="#3F5590"/>
-                          </svg>
-                        </div>
-                      </div>
-
-                      {/* Question Options */}
-                      {expandedQuestions[q.id] && (
-                        <div className="px-4 pb-4">
-                          <div className="flex flex-wrap gap-6">
-                            {q.options.map((option, optionIndex) => {
-                              const isSelected = decisionTreeAnswers[q.id] === option || 
-                                                (option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:"));
-                              
-                              return (
-                                <div 
-                                  key={optionIndex}
-                                  className="flex items-center"
-                                >
-                                  <div 
-                                    className="flex items-center cursor-pointer"
-                                    onClick={() => handleAnswerSelect(q.id, option)}
-                                  >
-                                    {/* Radio button */}
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${
-                                      isSelected 
-                                        ? 'bg-white border-[#E53E3E]' 
-                                        : 'bg-white border-[#CBD5E1]'
-                                    }`}>
-                                      <div className={`w-3 h-3 rounded-full ${
-                                        isSelected 
-                                          ? 'bg-[#E53E3E]' 
-                                          : 'bg-[#CBD5E1]'
-                                      }`}>
-                                      </div>
-                                    </div>
-                                    <span className="text-[15px] text-[#333] select-none" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                                      {option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:") 
-                                        ? decisionTreeAnswers[q.id] 
-                                        : option}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Inline input for "Other" option */}
-                                  {option === "Other" && currentQuestionId === q.id && (
-                                    <input
-                                      type="text"
-                                      value={otherInputValue}
-                                      onChange={(e) => setOtherInputValue(e.target.value)}
-                                      onBlur={handleOtherSubmit}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleOtherSubmit();
-                                        } else if (e.key === 'Escape') {
-                                          handleOtherCancel();
-                                        }
-                                      }}
-                                      placeholder="Specify..."
-                                      className="ml-3 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
-                                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                                      autoFocus
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="w-screen flex flex-col items-center bg-[#f6f8ff] py-6 border border-blue-200 rounded-b-lg px-4">
       {/* Description */}
@@ -615,9 +339,45 @@ const SearchPanel = ({ onSearch }) => {
         CBSI activates CFPIC's vision to support AB 2083 Children, Youth & Families System of Care (CYFSOC) leadership by helping them advance their partnerships across all child and family serving systems, at every level. The goals of CBSI are to enhance the care continuum for children and youth, and particularly those with complex care needs and who are involved in multiple systems.
       </div>
 
-      {/* Decision Tree */}
+      {/* Decision Tree Quick Access */}
       <div className="w-full md:w-[80%] mb-4">
-        <DecisionTree />
+        <div className="bg-white rounded-xl border-2 border-[#015AB8] p-6 text-center">
+          <h3 className="text-xl font-semibold text-[#015AB8] mb-3">
+            Get Personalized Resources
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Answer 4 quick questions to get resources tailored to your specific needs and system affiliation.
+          </p>
+          
+          {/* Quick Tags */}
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
+            <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
+              #system-affiliation
+            </span>
+            <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
+              #professional-role
+            </span>
+            <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
+              #resource-type
+            </span>
+            <span className="bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
+              #target-population
+            </span>
+          </div>
+
+          <button
+            onClick={startDecisionTree}
+            className="bg-[#015AB8] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#014a9f] transition-colors"
+          >
+            Start Decision Tree (4 Questions)
+          </button>
+          
+          {userPreferences && (
+            <p className="text-sm text-green-600 mt-2">
+              ✓ You have personalized preferences active
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -641,7 +401,7 @@ const SearchPanel = ({ onSearch }) => {
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Search"
+            placeholder="Search resources, services, placements..."
             className={`flex-1 bg-white outline-none border-none shadow-none focus:ring-0 text-gray-700 transition-all duration-150`}
             style={{ boxShadow: "none" }}
             value={searchInput}
@@ -657,22 +417,73 @@ const SearchPanel = ({ onSearch }) => {
           )}
         </div>
 
-        {/* Filter Chips */}
+        {/* Filter Chips with Navigation Tags */}
         <div className="flex flex-wrap justify-center gap-2 mt-1 pb-2">
           {filterChips.map((chip, idx) => (
             <button
               key={chip}
               style={buttonTextStyle}
               onClick={() => handleFilterSelect(idx)}
-              className={`px-3 py-2 rounded-xl border-2 font-medium whitespace-nowrap transition-colors duration-150
+              className={`px-3 py-2 rounded-xl border-2 font-medium whitespace-nowrap transition-colors duration-150 relative
                 ${idx === selectedFilter
                   ? 'bg-[#D14B3A] text-white border-[#D14B3A]'
                   : 'bg-white text-[#222] border-[#E8ECFF] hover:bg-white hover:border-gray-300'
                 }`}
             >
               {chip}
+              {/* Navigation tags */}
+              <span className="sr-only">
+                {chip === "Child Welfare (CW)" && "#child-welfare #cws #foster-care #family-services"}
+                {chip === "Probation" && "#probation #juvenile-justice #court #supervision"}
+                {chip === "Behavioral Health (BH)" && "#mental-health #behavioral-health #therapy #counseling"}
+                {chip === "Developmental Services" && "#developmental #regional-center #disabilities #special-needs"}
+                {chip === "Education" && "#education #school #special-education #academic-support"}
+              </span>
             </button>
           ))}
+        </div>
+
+        {/* Additional Navigation Tags */}
+        <div className="text-center">
+          <p className="text-xs text-gray-500 mb-2">Popular searches:</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button 
+              onClick={() => setSearchInput('placement')}
+              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              #placement
+            </button>
+            <button 
+              onClick={() => setSearchInput('services')}
+              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              #services
+            </button>
+            <button 
+              onClick={() => setSearchInput('support')}
+              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              #support
+            </button>
+            <button 
+              onClick={() => setSearchInput('youth')}
+              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              #youth
+            </button>
+            <button 
+              onClick={() => setSearchInput('family')}
+              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              #family
+            </button>
+            <button 
+              onClick={() => setSearchInput('crisis')}
+              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              #crisis
+            </button>
+          </div>
         </div>
       </div>
 
@@ -683,7 +494,7 @@ const SearchPanel = ({ onSearch }) => {
           style={buttonTextStyle}
           className="bg-[#3eb6e0] text-white px-4 py-2 rounded-xl text-sm"
         >
-          Clear All
+          Clear All Filters
         </button>
       </div>
     </div>

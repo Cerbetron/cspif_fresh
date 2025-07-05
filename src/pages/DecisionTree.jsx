@@ -33,123 +33,78 @@ const DecisionTree = () => {
   const [answers, setAnswers] = useState({});
   const [otherInputValue, setOtherInputValue] = useState('');
   const [showOtherInput, setShowOtherInput] = useState(false);
-  const [customQuestions, setCustomQuestions] = useState([]);
-  const [showCustomization, setShowCustomization] = useState(false);
 
-  // Default Decision Tree Questions
-  const defaultQuestions = [
+  // Fixed 4 questions - no conditional logic
+  const questions = [
     {
       id: 1,
-      category: "Demographic",
+      category: "System Affiliation",
       question: "What system are you affiliated with?",
       options: [
         "Child Welfare Services (CWS)",
         "Behavioral Health (BH)",
         "Education",
         "Probation",
-        "Regional center",
-        "Community partner",
+        "Regional Center",
+        "Community Partner",
         "Other"
       ],
-      required: true
+      tags: ["system", "affiliation", "role", "department"]
     },
     {
       id: 2,
-      category: "Demographic",
+      category: "Professional Role",
       question: "What role do you most closely identify with?",
       options: [
         "Direct Services",
         "Leadership/Management",
-        "Fiscal",
+        "Fiscal/Administrative",
+        "Case Management",
+        "Clinical Services",
         "Other"
       ],
-      required: true
+      tags: ["role", "position", "job", "responsibility"]
     },
     {
       id: 3,
-      category: "Funnels",
-      question: "If you would like child-specific resources, please select from the following resource choices, or if looking for general system information, go to the next question.",
+      category: "Resource Type",
+      question: "What type of resources are you looking for?",
       options: [
-        "Services",
-        "Placement options",
-        "Skip to next question"
+        "Services & Support Programs",
+        "Placement Options",
+        "Training & Technical Assistance",
+        "Funding & Financial Support",
+        "Assessment Tools",
+        "Other"
       ],
-      required: false
+      tags: ["resources", "services", "placement", "support"]
     },
     {
       id: 4,
-      category: "Funnels",
-      question: "What systems already serve the youth, or what systems would the youth be eligible for?",
+      category: "Target Population",
+      question: "What population are you primarily serving?",
       options: [
-        "Child Welfare Services (CWS)",
-        "Behavioral Health (BH)",
-        "Regional Center",
-        "Probation",
-        "Education"
+        "Children (0-12 years)",
+        "Adolescents (13-17 years)",
+        "Transition Age Youth (18-21 years)",
+        "Families",
+        "All Age Groups",
+        "Other"
       ],
-      showWhen: (answers) => {
-        return answers[3] === "Services" || answers[3] === "Placement options";
-      },
-      required: false
-    },
-    {
-      id: 5,
-      category: "Funnels",
-      question: "What complex needs does the youth have?",
-      options: [
-        "Developmental needs",
-        "Behavioral health needs",
-        "Education needs",
-        "Substance use disorder(s)",
-        "CSEC",
-        "Placement disruption"
-      ],
-      showWhen: (answers) => {
-        return answers[3] === "Services" || answers[3] === "Placement options";
-      },
-      required: false
-    },
-    {
-      id: 6,
-      category: "Funnels",
-      question: "If you would like more information about system partner placements and services, please identify which system and which resource you would like to learn more about.",
-      options: [
-        "Child Welfare",
-        "Behavioral Health (BH)",
-        "Education",
-        "Probation",
-        "Regional center"
-      ],
-      required: false
+      tags: ["population", "age", "demographics", "clients"]
     }
   ];
 
-  // Load saved answers and custom questions from cookies on component mount
+  // Load saved answers from cookies on component mount
   useEffect(() => {
     const savedAnswers = getCookie('decisionTreeAnswers');
-    const savedCustomQuestions = getCookie('customDecisionTreeQuestions');
-    
     if (savedAnswers) {
       setAnswers(savedAnswers);
-    }
-    
-    if (savedCustomQuestions && savedCustomQuestions.length > 0) {
-      setCustomQuestions(savedCustomQuestions);
-    } else {
-      setCustomQuestions(defaultQuestions);
     }
   }, []);
 
   // Get current question
-  const getCurrentQuestion = () => {
-    const visibleQuestions = customQuestions.filter(q => {
-      if (!q.showWhen) return true;
-      return q.showWhen(answers);
-    });
-    return visibleQuestions[currentQuestionIndex];
-  };
-
-  const currentQuestion = getCurrentQuestion();
+  const currentQuestion = questions[currentQuestionIndex];
 
   // Handle answer selection
   const handleAnswerSelect = (option) => {
@@ -190,12 +145,7 @@ const DecisionTree = () => {
 
   // Handle next question
   const handleNext = () => {
-    const visibleQuestions = customQuestions.filter(q => {
-      if (!q.showWhen) return true;
-      return q.showWhen(answers);
-    });
-
-    if (currentQuestionIndex < visibleQuestions.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       // Decision tree complete, navigate to resources page
@@ -215,34 +165,21 @@ const DecisionTree = () => {
     navigate('/resources');
   };
 
-  // Save custom questions
-  const saveCustomQuestions = (questions) => {
-    setCustomQuestions(questions);
-    setCookie('customDecisionTreeQuestions', questions);
-    setShowCustomization(false);
-  };
-
-  // Reset to default questions
-  const resetToDefault = () => {
-    setCustomQuestions(defaultQuestions);
-    setCookie('customDecisionTreeQuestions', defaultQuestions);
-    setCurrentQuestionIndex(0);
+  // Reset all answers
+  const resetAnswers = () => {
     setAnswers({});
     setCookie('decisionTreeAnswers', {});
+    setCurrentQuestionIndex(0);
   };
 
   // Calculate progress
-  const visibleQuestions = customQuestions.filter(q => {
-    if (!q.showWhen) return true;
-    return q.showWhen(answers);
-  });
-  const progress = visibleQuestions.length > 0 ? ((currentQuestionIndex + 1) / visibleQuestions.length) * 100 : 0;
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   // Check if user has completed the decision tree before
   const hasCompletedBefore = Object.keys(answers).length > 0;
 
   // Welcome screen for first-time users
-  if (!hasCompletedBefore && currentQuestionIndex === 0 && !currentQuestion) {
+  if (!hasCompletedBefore && currentQuestionIndex === 0 && Object.keys(answers).length === 0) {
     return (
       <div className="min-h-screen bg-[#f6f8ff] flex flex-col">
         <Header />
@@ -255,101 +192,40 @@ const DecisionTree = () => {
               </h1>
               <p className="text-xl text-gray-700 mb-8 leading-relaxed">
                 This decision tree will help you find personalized resources based on your specific needs and system affiliation. 
-                Answer a few questions to get started with tailored recommendations.
+                Answer 4 simple questions to get started with tailored recommendations.
               </p>
+              
+              {/* Quick Tags Preview */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-[#015AB8] mb-4">We'll ask about:</h3>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {questions.map((q, index) => (
+                    <div key={q.id} className="bg-[#E2E4FB] text-[#015AB8] px-4 py-2 rounded-full text-sm font-medium">
+                      {index + 1}. {q.category}
+                    </div>
+                  ))}
+                </div>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <button
-                  onClick={() => {
-                    setCustomQuestions(defaultQuestions);
-                    setCurrentQuestionIndex(0);
-                  }}
+                  onClick={() => setCurrentQuestionIndex(0)}
                   className="bg-[#015AB8] text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-[#014a9f] transition-colors"
                 >
-                  Start Decision Tree
-                </button>
-                
-                <button
-                  onClick={() => setShowCustomization(true)}
-                  className="bg-[#CB3525] text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-[#b53e2f] transition-colors"
-                >
-                  Customize Questions
+                  Start Decision Tree (4 Questions)
                 </button>
                 
                 <button
                   onClick={handleSkip}
                   className="bg-gray-300 text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors"
                 >
-                  Skip to Resources
+                  Skip to All Resources
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <Footer />
-      </div>
-    );
-  }
-
-  // Question customization interface
-  if (showCustomization) {
-    return (
-      <div className="min-h-screen bg-[#f6f8ff] flex flex-col">
-        <Header />
-        
-        <div className="flex-1 px-4 py-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold text-[#015AB8]">Customize Decision Tree Questions</h2>
-                <button
-                  onClick={() => setShowCustomization(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              </div>
-
-              <QuestionCustomizer 
-                questions={customQuestions}
-                onSave={saveCustomQuestions}
-                onReset={resetToDefault}
-              />
-            </div>
-          </div>
-        </div>
-
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!currentQuestion) {
-    return (
-      <div className="min-h-screen bg-[#f6f8ff] flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-4">Decision Tree Complete!</h2>
-            <div className="space-y-4">
-              <button
-                onClick={() => navigate('/resources')}
-                className="bg-[#015AB8] text-white px-6 py-3 rounded-lg font-semibold mr-4"
-              >
-                View Personalized Resources
-              </button>
-              <button
-                onClick={() => setShowCustomization(true)}
-                className="bg-[#CB3525] text-white px-6 py-3 rounded-lg font-semibold"
-              >
-                Customize Questions
-              </button>
-            </div>
-          </div>
-        </div>
         <Footer />
       </div>
     );
@@ -365,17 +241,17 @@ const DecisionTree = () => {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-[#015AB8]">
-                Question {currentQuestionIndex + 1} of {visibleQuestions.length}
+                Question {currentQuestionIndex + 1} of {questions.length}
               </span>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-[#015AB8]">
                   {Math.round(progress)}% Complete
                 </span>
                 <button
-                  onClick={() => setShowCustomization(true)}
+                  onClick={resetAnswers}
                   className="text-sm text-[#CB3525] hover:text-[#b53e2f] font-medium"
                 >
-                  Customize Questions
+                  Reset
                 </button>
               </div>
             </div>
@@ -387,12 +263,54 @@ const DecisionTree = () => {
             </div>
           </div>
 
+          {/* Question Overview */}
+          <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border-l-4 border-[#015AB8]">
+            <h3 className="text-lg font-semibold text-[#015AB8] mb-2">All Questions Preview:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {questions.map((q, index) => (
+                <div 
+                  key={q.id} 
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    index === currentQuestionIndex 
+                      ? 'border-[#015AB8] bg-[#E2E4FB]' 
+                      : answers[q.id] 
+                        ? 'border-green-300 bg-green-50' 
+                        : 'border-gray-200 bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm">
+                      {index + 1}. {q.category}
+                    </span>
+                    {answers[q.id] && (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                  {answers[q.id] && (
+                    <div className="text-xs text-gray-600 mt-1 truncate">
+                      {answers[q.id]}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Question Card */}
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
             <div className="mb-6">
-              <span className="inline-block bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium mb-4">
-                {currentQuestion.category}
-              </span>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="inline-block bg-[#E2E4FB] text-[#015AB8] px-3 py-1 rounded-full text-sm font-medium">
+                  {currentQuestion.category}
+                </span>
+                {currentQuestion.tags.map((tag, index) => (
+                  <span key={index} className="inline-block bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
               <h2 
                 className="text-2xl font-semibold text-[#333] leading-tight"
                 style={{ 
@@ -491,161 +409,43 @@ const DecisionTree = () => {
                   : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
               }`}
             >
-              Previous
+              ← Previous
             </button>
 
-            <button
-              onClick={handleSkip}
-              className="px-6 py-3 rounded-lg font-semibold bg-[#CB3525] text-white hover:bg-[#b53e2f] transition-colors"
-            >
-              Skip to Resources
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSkip}
+                className="px-6 py-3 rounded-lg font-semibold bg-gray-300 text-gray-700 hover:bg-gray-400 transition-colors"
+              >
+                Skip to Resources
+              </button>
+              
+              {currentQuestionIndex === questions.length - 1 ? (
+                <button
+                  onClick={() => navigate('/resources')}
+                  className="px-6 py-3 rounded-lg font-semibold bg-[#015AB8] text-white hover:bg-[#014a9f] transition-colors"
+                >
+                  View My Resources →
+                </button>
+              ) : (
+                <button
+                  onClick={handleNext}
+                  disabled={!answers[currentQuestion.id]}
+                  className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                    answers[currentQuestion.id]
+                      ? 'bg-[#015AB8] text-white hover:bg-[#014a9f]'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Next →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <Footer />
-    </div>
-  );
-};
-
-// Question Customizer Component
-const QuestionCustomizer = ({ questions, onSave, onReset }) => {
-  const [editableQuestions, setEditableQuestions] = useState(questions);
-
-  const updateQuestion = (index, field, value) => {
-    const updated = [...editableQuestions];
-    updated[index] = { ...updated[index], [field]: value };
-    setEditableQuestions(updated);
-  };
-
-  const updateOption = (questionIndex, optionIndex, value) => {
-    const updated = [...editableQuestions];
-    updated[questionIndex].options[optionIndex] = value;
-    setEditableQuestions(updated);
-  };
-
-  const addOption = (questionIndex) => {
-    const updated = [...editableQuestions];
-    updated[questionIndex].options.push('New Option');
-    setEditableQuestions(updated);
-  };
-
-  const removeOption = (questionIndex, optionIndex) => {
-    const updated = [...editableQuestions];
-    updated[questionIndex].options.splice(optionIndex, 1);
-    setEditableQuestions(updated);
-  };
-
-  const addQuestion = () => {
-    const newQuestion = {
-      id: Math.max(...editableQuestions.map(q => q.id)) + 1,
-      category: "Custom",
-      question: "New Question",
-      options: ["Option 1", "Option 2"],
-      required: false
-    };
-    setEditableQuestions([...editableQuestions, newQuestion]);
-  };
-
-  const removeQuestion = (index) => {
-    const updated = editableQuestions.filter((_, i) => i !== index);
-    setEditableQuestions(updated);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold">Questions ({editableQuestions.length})</h3>
-        <div className="space-x-3">
-          <button
-            onClick={addQuestion}
-            className="bg-[#015AB8] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#014a9f] transition-colors"
-          >
-            Add Question
-          </button>
-          <button
-            onClick={onReset}
-            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-400 transition-colors"
-          >
-            Reset to Default
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-6 max-h-96 overflow-y-auto">
-        {editableQuestions.map((question, qIndex) => (
-          <div key={question.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <input
-                    type="text"
-                    value={question.category}
-                    onChange={(e) => updateQuestion(qIndex, 'category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#015AB8]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
-                  <textarea
-                    value={question.question}
-                    onChange={(e) => updateQuestion(qIndex, 'question', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#015AB8]"
-                    rows="2"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => removeQuestion(qIndex)}
-                className="ml-4 text-red-500 hover:text-red-700"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
-              <div className="space-y-2">
-                {question.options.map((option, oIndex) => (
-                  <div key={oIndex} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={option}
-                      onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#015AB8]"
-                    />
-                    <button
-                      onClick={() => removeOption(qIndex, oIndex)}
-                      className="text-red-500 hover:text-red-700 px-2"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => addOption(qIndex)}
-                  className="text-[#015AB8] hover:text-[#014a9f] text-sm font-medium"
-                >
-                  + Add Option
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex justify-end space-x-3 pt-4 border-t">
-        <button
-          onClick={() => onSave(editableQuestions)}
-          className="bg-[#015AB8] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#014a9f] transition-colors"
-        >
-          Save Questions
-        </button>
-      </div>
     </div>
   );
 };
