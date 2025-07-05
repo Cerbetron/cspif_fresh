@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
+import { useNavigate } from 'react-router-dom';
 
 // Example options
 const countyOptions = ["County", "Alameda", "Los Angeles", "Sacramento", "San Diego"];
@@ -109,6 +110,7 @@ const CustomDropdown = ({ options, value, onChange }) => {
 };
 
 const SearchPanel = ({ onSearch }) => {
+  const navigate = useNavigate();
   const [selectedFilter, setSelectedFilter] = useState(0);
   const [searchInput, setSearchInput] = useState('');
   const [county, setCounty] = useState([]);
@@ -126,6 +128,38 @@ const SearchPanel = ({ onSearch }) => {
   const [showOtherDialog, setShowOtherDialog] = useState(false);
   const [currentQuestionId, setCurrentQuestionId] = useState(null);
   const [otherInputValue, setOtherInputValue] = useState('');
+
+  // Cookie utilities
+  const setCookie = (name, value, days = 30) => {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = `${name}=${JSON.stringify(value)};expires=${expires.toUTCString()};path=/`;
+  };
+
+  const getCookie = (name) => {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) {
+        try {
+          return JSON.parse(c.substring(nameEQ.length, c.length));
+        } catch (e) {
+          return null;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Load saved decision tree answers
+  useEffect(() => {
+    const savedAnswers = getCookie('decisionTreeAnswers');
+    if (savedAnswers) {
+      setDecisionTreeAnswers(savedAnswers);
+    }
+  }, []);
 
   // Decision Tree data
   const decisionTreeQuestions = [
@@ -227,6 +261,11 @@ const SearchPanel = ({ onSearch }) => {
     setDecisionTreeOpen(!decisionTreeOpen);
   };
 
+  // Navigate to full decision tree
+  const startDecisionTree = () => {
+    navigate('/decision-tree');
+  };
+
   // Toggle question expansion
   const toggleQuestion = (questionId) => {
     setExpandedQuestions(prev => ({
@@ -255,13 +294,16 @@ const SearchPanel = ({ onSearch }) => {
       if (currentAnswer === option) {
         const newAnswers = { ...prev };
         delete newAnswers[questionId]; // Remove the answer completely
+        setCookie('decisionTreeAnswers', newAnswers);
         return newAnswers;
       } else {
         // Otherwise, select the new option
-        return {
+        const newAnswers = {
           ...prev,
           [questionId]: option
         };
+        setCookie('decisionTreeAnswers', newAnswers);
+        return newAnswers;
       }
     });
   };
@@ -269,19 +311,19 @@ const SearchPanel = ({ onSearch }) => {
   // Handle "Other" dialog submission
   const handleOtherSubmit = () => {
     if (otherInputValue.trim()) {
-      setDecisionTreeAnswers(prev => ({
-        ...prev,
+      const newAnswers = {
+        ...decisionTreeAnswers,
         [currentQuestionId]: `Other: ${otherInputValue.trim()}`
-      }));
+      };
+      setDecisionTreeAnswers(newAnswers);
+      setCookie('decisionTreeAnswers', newAnswers);
     }
-    setShowOtherDialog(false);
     setCurrentQuestionId(null);
     setOtherInputValue('');
   };
 
   // Handle "Other" dialog cancel
   const handleOtherCancel = () => {
-    setShowOtherDialog(false);
     setCurrentQuestionId(null);
     setOtherInputValue('');
   };
@@ -458,14 +500,6 @@ const SearchPanel = ({ onSearch }) => {
       e.preventDefault();
     }
   };
-  
-  const partnerFullNames = {
-    TAH: "Tribally Approved Home (TAH)",
-    RFA: "Resource Family Approval (RFA)",
-    CWS: "Child Welfare Services (CWS)",
-    MHP: "Mental Health Plan (MHP)",
-    ASAM: "American Society of Addiction Medicine (ASAM)",
-  };
 
   // Decision Tree Component
   const DecisionTree = () => (
@@ -502,123 +536,132 @@ const SearchPanel = ({ onSearch }) => {
       {decisionTreeOpen && (
         <div className="bg-white px-6 py-6">
           <div className="max-w-6xl mx-auto space-y-4">
-            {decisionTreeQuestions
-              .filter(q => {
-                if (!q.parentId) return true;
-                if (q.showWhen) return q.showWhen(decisionTreeAnswers);
-                return true;
-              })
-              .map((q, index) => {
-                const mainQuestions = decisionTreeQuestions.filter(question => !question.parentId);
-                const questionNumber = q.parentId 
-                  ? `${q.parentId}.${q.id.toString().split('.')[1]}` 
-                  : mainQuestions.findIndex(mainQ => mainQ.id === q.id) + 1;
-                
-                return (
-                  <div key={q.id} className={`${q.parentId ? 'ml-8' : ''}`}>
-                    {/* Question Container - includes both header and options */}
-                    <div 
-                      className={`transition-all duration-200 ${
-                        expandedQuestions[q.id] 
-                          ? 'bg-[#E2E4FB] border-2 border-[#3B82F6] rounded-lg' 
-                          : 'bg-transparent'
-                      }`}
-                    >
-                      {/* Question Header */}
-                      <div 
-                        className="flex items-start justify-between p-4 cursor-pointer"
-                        onClick={() => toggleQuestion(q.id)}
-                      >
-                        <div className="flex-1">
-                          <span 
-                            className="text-[#333]" 
-                            style={{ 
-                              fontFamily: 'Open Sans, sans-serif',
-                              fontWeight: 400,
-                              fontSize: '18px',
-                              lineHeight: '115%',
-                              letterSpacing: '1%'
-                            }}
-                          >
-                            {questionNumber}. {q.question}
-                          </span>
-                        </div>
-                        <div className={`transform transition-transform duration-200 ml-4 flex-shrink-0 ${expandedQuestions[q.id] ? '' : 'rotate-180'}`}>
-                          <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M0 7.38086L8 -0.000279427L16 7.38086H0Z" fill="#3F5590"/>
-                          </svg>
-                        </div>
-                      </div>
+            {/* Start Full Decision Tree Button */}
+            <div className="text-center mb-6">
+              <button
+                onClick={startDecisionTree}
+                className="bg-[#015AB8] text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-[#014a9f] transition-colors"
+              >
+                Start Full Decision Tree
+              </button>
+              <p className="text-gray-600 mt-2 text-sm">
+                Get personalized resource recommendations based on your specific needs
+              </p>
+            </div>
 
-                      {/* Question Options - within the same container */}
-                      {expandedQuestions[q.id] && (
-                        <div className="px-4 pb-4">
-                          <div className="flex flex-wrap gap-6">
-                            {q.options.map((option, optionIndex) => {
-                              const isSelected = decisionTreeAnswers[q.id] === option || 
-                                                (option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:"));
-                              
-                              return (
-                                <div 
-                                  key={optionIndex}
-                                  className="flex items-center"
-                                >
-                                  <div 
-                                    className="flex items-center cursor-pointer"
-                                    onClick={() => handleAnswerSelect(q.id, option)}
-                                  >
-                                    {/* Radio button for all questions */}
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${
-                                      isSelected 
-                                        ? 'bg-white border-[#E53E3E]' 
-                                        : 'bg-white border-[#CBD5E1]'
-                                    }`}>
-                                      {/* Grey dot when not selected, red dot when selected */}
-                                      <div className={`w-3 h-3 rounded-full ${
-                                        isSelected 
-                                          ? 'bg-[#E53E3E]' 
-                                          : 'bg-[#CBD5E1]'
-                                      }`}>
-                                      </div>
-                                    </div>
-                                    <span className="text-[15px] text-[#333] select-none" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                                      {option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:") 
-                                        ? decisionTreeAnswers[q.id] 
-                                        : option}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Inline input for "Other" option */}
-                                  {option === "Other" && isSelected && (
-                                    <input
-                                      type="text"
-                                      value={otherInputValue}
-                                      onChange={(e) => setOtherInputValue(e.target.value)}
-                                      onBlur={handleOtherSubmit}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleOtherSubmit();
-                                        } else if (e.key === 'Escape') {
-                                          handleOtherCancel();
-                                        }
-                                      }}
-                                      placeholder="Specify..."
-                                      className="ml-3 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
-                                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                                      autoFocus
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                  )}
-                                </div>
-                              );
-                            })}
+            {/* Quick Preview Questions */}
+            <div className="border-t pt-4">
+              <h4 className="text-lg font-semibold text-[#333] mb-4">Quick Preview:</h4>
+              {decisionTreeQuestions
+                .filter(q => !q.parentId && q.id <= 2) // Show only first 2 main questions as preview
+                .map((q, index) => {
+                  const questionNumber = index + 1;
+                  
+                  return (
+                    <div key={q.id} className="mb-4">
+                      {/* Question Container */}
+                      <div 
+                        className={`transition-all duration-200 ${
+                          expandedQuestions[q.id] 
+                            ? 'bg-[#E2E4FB] border-2 border-[#3B82F6] rounded-lg' 
+                            : 'bg-transparent'
+                        }`}
+                      >
+                        {/* Question Header */}
+                        <div 
+                          className="flex items-start justify-between p-4 cursor-pointer"
+                          onClick={() => toggleQuestion(q.id)}
+                        >
+                          <div className="flex-1">
+                            <span 
+                              className="text-[#333]" 
+                              style={{ 
+                                fontFamily: 'Open Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '16px',
+                                lineHeight: '115%',
+                                letterSpacing: '1%'
+                              }}
+                            >
+                              {questionNumber}. {q.question}
+                            </span>
+                          </div>
+                          <div className={`transform transition-transform duration-200 ml-4 flex-shrink-0 ${expandedQuestions[q.id] ? '' : 'rotate-180'}`}>
+                            <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M0 7.38086L8 -0.000279427L16 7.38086H0Z" fill="#3F5590"/>
+                            </svg>
                           </div>
                         </div>
-                      )}
+
+                        {/* Question Options */}
+                        {expandedQuestions[q.id] && (
+                          <div className="px-4 pb-4">
+                            <div className="flex flex-wrap gap-6">
+                              {q.options.map((option, optionIndex) => {
+                                const isSelected = decisionTreeAnswers[q.id] === option || 
+                                                  (option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:"));
+                                
+                                return (
+                                  <div 
+                                    key={optionIndex}
+                                    className="flex items-center"
+                                  >
+                                    <div 
+                                      className="flex items-center cursor-pointer"
+                                      onClick={() => handleAnswerSelect(q.id, option)}
+                                    >
+                                      {/* Radio button */}
+                                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${
+                                        isSelected 
+                                          ? 'bg-white border-[#E53E3E]' 
+                                          : 'bg-white border-[#CBD5E1]'
+                                      }`}>
+                                        <div className={`w-3 h-3 rounded-full ${
+                                          isSelected 
+                                            ? 'bg-[#E53E3E]' 
+                                            : 'bg-[#CBD5E1]'
+                                        }`}>
+                                        </div>
+                                      </div>
+                                      <span className="text-[15px] text-[#333] select-none" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                                        {option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:") 
+                                          ? decisionTreeAnswers[q.id] 
+                                          : option}
+                                      </span>
+                                    </div>
+                                    
+                                    {/* Inline input for "Other" option */}
+                                    {option === "Other" && currentQuestionId === q.id && (
+                                      <input
+                                        type="text"
+                                        value={otherInputValue}
+                                        onChange={(e) => setOtherInputValue(e.target.value)}
+                                        onBlur={handleOtherSubmit}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleOtherSubmit();
+                                          } else if (e.key === 'Escape') {
+                                            handleOtherCancel();
+                                          }
+                                        }}
+                                        placeholder="Specify..."
+                                        className="ml-3 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+                                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+            </div>
           </div>
         </div>
       )}
@@ -649,7 +692,7 @@ const SearchPanel = ({ onSearch }) => {
 
       {/* Filters */}
       <div className="md:w-[80%] bg-[#f6f8ff] rounded-xl p-4 shadow flex flex-col gap-3 sm:w-full">
-        {/* Dropdowns - remove Age dropdown */}
+        {/* Dropdowns */}
         <div className="flex gap-4 w-full flex-col sm:flex-row">
           <MultiSelectDropdown options={countyOptions} value={county} setValue={setCounty} defaultOption="County" />
           <MultiSelectDropdown options={insuranceOptions} value={insurance} setValue={setInsurance} defaultOption="Insurance" />
