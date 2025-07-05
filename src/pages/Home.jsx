@@ -55,9 +55,32 @@ const Home = () => {
     }
   }, []);
 
-  // Filtering logic with personalization
+  // Filtering logic with personalization and filter chips
   const filteredServices = React.useMemo(() => {
     let services = combinedServices;
+
+    // Apply filter chip selection first
+    if (filters && filters.selectedFilter && filters.selectedFilter !== "All") {
+      const filterMapping = {
+        "Child Welfare (CW)": ["CWS", "Child Welfare"],
+        "Probation": ["Probation"],
+        "Behavioral Health (BH)": ["Mental Health", "BH", "Behavioral Health"],
+        "Developmental Services": ["Regional Center", "Developmental"],
+        "Education": ["Education"]
+      };
+
+      const selectedSystem = filters.selectedFilter;
+      if (filterMapping[selectedSystem]) {
+        services = services.filter(service => 
+          filterMapping[selectedSystem].some(system => 
+            service.cw?.includes(system) || 
+            service.partners?.some(partner => partner.includes(system)) ||
+            service.title.toLowerCase().includes(system.toLowerCase()) ||
+            service.description.toLowerCase().includes(system.toLowerCase())
+          )
+        );
+      }
+    }
 
     // Apply personalization based on decision tree answers
     if (userPreferences) {
@@ -100,7 +123,7 @@ const Home = () => {
       }
     }
 
-    // Apply search and filter criteria
+    // Apply search and other filter criteria
     if (!filters) return services;
     
     return services.filter(service => {
@@ -112,8 +135,6 @@ const Home = () => {
         service.description.toLowerCase().includes(search);
 
       // Multi-select filters
-      const matchesAge =
-        !filters.age || filters.age.length === 0 || filters.age.includes("Age") || filters.age.includes(service.age);
       const matchesCounty =
         !filters.county || filters.county.length === 0 || filters.county.includes("County") || filters.county.includes(service.county);
       const matchesInsurance =
@@ -121,7 +142,7 @@ const Home = () => {
       const matchesCw =
         !filters.cw || filters.cw.length === 0 || filters.cw.includes("Child Welfare") || filters.cw.includes(service.cw);
 
-      return matchesSearch && matchesAge && matchesCounty && matchesInsurance && matchesCw;
+      return matchesSearch && matchesCounty && matchesInsurance && matchesCw;
     });
   }, [filters, userPreferences]);
 

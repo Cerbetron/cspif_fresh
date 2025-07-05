@@ -187,72 +187,6 @@ const SearchPanel = ({ onSearch }) => {
         "Fiscal",
         "Other"
       ]
-    },
-    {
-      id: 3,
-      category: "Funnels",
-      question: "If you would like child-specific resources, please select from the following resource choices, or if looking for general system information, go to the next question.",
-      options: [
-        "Services",
-        "Placement options"
-      ],
-      hasSubQuestions: true
-    },
-    {
-      id: 3.1,
-      parentId: 3,
-      question: "What systems already serve the youth, or what systems would the youth be eligible for?",
-      options: [
-        "Child Welfare Services (CWS)",
-        "Behavioral Health (BH)",
-        "Regional Center",
-        "Probation",
-        "Education"
-      ],
-      showWhen: (answers) => {
-        return answers[3] === "Services" || answers[3] === "Placement options";
-      }
-    },
-    {
-      id: 3.2,
-      parentId: 3,
-      question: "What complex needs does the youth have?",
-      options: [
-        "Developmental needs",
-        "Behavioral health needs",
-        "Education needs",
-        "Substance use disorder(s)",
-        "CSEC",
-        "Placement disruption"
-      ],
-      showWhen: (answers) => {
-        return answers[3] === "Services" || answers[3] === "Placement options";
-      }
-    },
-    {
-      id: 4,
-      category: "Funnels",
-      question: "If you would like more information about system partner placements and services, please identify which system and which resource you would like to learn more about.",
-      options: [
-        "Child Welfare",
-        "Behavioral Health (BH)",
-        "Education",
-        "Probation",
-        "Regional center"
-      ],
-      hasSubQuestions: true
-    },
-    {
-      id: 4.1,
-      parentId: 4,
-      question: "Would you like to know more about services and/or supports from the systems selected?",
-      options: [
-        "Services",
-        "Placement options"
-      ],
-      showWhen: (answers) => {
-        return answers[4] && answers[4] !== "";
-      }
     }
   ];
 
@@ -495,8 +429,6 @@ const SearchPanel = ({ onSearch }) => {
 
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter") {
-      // Optionally, you can call onSearch here if you want to trigger search on Enter
-      // onSearch({ search: searchInput, age, county, insurance, cw, selectedFilter: filterChips[selectedFilter] });
       e.preventDefault();
     }
   };
@@ -552,115 +484,113 @@ const SearchPanel = ({ onSearch }) => {
             {/* Quick Preview Questions */}
             <div className="border-t pt-4">
               <h4 className="text-lg font-semibold text-[#333] mb-4">Quick Preview:</h4>
-              {decisionTreeQuestions
-                .filter(q => !q.parentId && q.id <= 2) // Show only first 2 main questions as preview
-                .map((q, index) => {
-                  const questionNumber = index + 1;
-                  
-                  return (
-                    <div key={q.id} className="mb-4">
-                      {/* Question Container */}
+              {decisionTreeQuestions.map((q, index) => {
+                const questionNumber = index + 1;
+                
+                return (
+                  <div key={q.id} className="mb-4">
+                    {/* Question Container */}
+                    <div 
+                      className={`transition-all duration-200 ${
+                        expandedQuestions[q.id] 
+                          ? 'bg-[#E2E4FB] border-2 border-[#3B82F6] rounded-lg' 
+                          : 'bg-transparent'
+                      }`}
+                    >
+                      {/* Question Header */}
                       <div 
-                        className={`transition-all duration-200 ${
-                          expandedQuestions[q.id] 
-                            ? 'bg-[#E2E4FB] border-2 border-[#3B82F6] rounded-lg' 
-                            : 'bg-transparent'
-                        }`}
+                        className="flex items-start justify-between p-4 cursor-pointer"
+                        onClick={() => toggleQuestion(q.id)}
                       >
-                        {/* Question Header */}
-                        <div 
-                          className="flex items-start justify-between p-4 cursor-pointer"
-                          onClick={() => toggleQuestion(q.id)}
-                        >
-                          <div className="flex-1">
-                            <span 
-                              className="text-[#333]" 
-                              style={{ 
-                                fontFamily: 'Open Sans, sans-serif',
-                                fontWeight: 400,
-                                fontSize: '16px',
-                                lineHeight: '115%',
-                                letterSpacing: '1%'
-                              }}
-                            >
-                              {questionNumber}. {q.question}
-                            </span>
-                          </div>
-                          <div className={`transform transition-transform duration-200 ml-4 flex-shrink-0 ${expandedQuestions[q.id] ? '' : 'rotate-180'}`}>
-                            <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M0 7.38086L8 -0.000279427L16 7.38086H0Z" fill="#3F5590"/>
-                            </svg>
+                        <div className="flex-1">
+                          <span 
+                            className="text-[#333]" 
+                            style={{ 
+                              fontFamily: 'Open Sans, sans-serif',
+                              fontWeight: 400,
+                              fontSize: '16px',
+                              lineHeight: '115%',
+                              letterSpacing: '1%'
+                            }}
+                          >
+                            {questionNumber}. {q.question}
+                          </span>
+                        </div>
+                        <div className={`transform transition-transform duration-200 ml-4 flex-shrink-0 ${expandedQuestions[q.id] ? '' : 'rotate-180'}`}>
+                          <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M0 7.38086L8 -0.000279427L16 7.38086H0Z" fill="#3F5590"/>
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Question Options */}
+                      {expandedQuestions[q.id] && (
+                        <div className="px-4 pb-4">
+                          <div className="flex flex-wrap gap-6">
+                            {q.options.map((option, optionIndex) => {
+                              const isSelected = decisionTreeAnswers[q.id] === option || 
+                                                (option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:"));
+                              
+                              return (
+                                <div 
+                                  key={optionIndex}
+                                  className="flex items-center"
+                                >
+                                  <div 
+                                    className="flex items-center cursor-pointer"
+                                    onClick={() => handleAnswerSelect(q.id, option)}
+                                  >
+                                    {/* Radio button */}
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${
+                                      isSelected 
+                                        ? 'bg-white border-[#E53E3E]' 
+                                        : 'bg-white border-[#CBD5E1]'
+                                    }`}>
+                                      <div className={`w-3 h-3 rounded-full ${
+                                        isSelected 
+                                          ? 'bg-[#E53E3E]' 
+                                          : 'bg-[#CBD5E1]'
+                                      }`}>
+                                      </div>
+                                    </div>
+                                    <span className="text-[15px] text-[#333] select-none" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                                      {option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:") 
+                                        ? decisionTreeAnswers[q.id] 
+                                        : option}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Inline input for "Other" option */}
+                                  {option === "Other" && currentQuestionId === q.id && (
+                                    <input
+                                      type="text"
+                                      value={otherInputValue}
+                                      onChange={(e) => setOtherInputValue(e.target.value)}
+                                      onBlur={handleOtherSubmit}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleOtherSubmit();
+                                        } else if (e.key === 'Escape') {
+                                          handleOtherCancel();
+                                        }
+                                      }}
+                                      placeholder="Specify..."
+                                      className="ml-3 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+                                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                                      autoFocus
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
-
-                        {/* Question Options */}
-                        {expandedQuestions[q.id] && (
-                          <div className="px-4 pb-4">
-                            <div className="flex flex-wrap gap-6">
-                              {q.options.map((option, optionIndex) => {
-                                const isSelected = decisionTreeAnswers[q.id] === option || 
-                                                  (option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:"));
-                                
-                                return (
-                                  <div 
-                                    key={optionIndex}
-                                    className="flex items-center"
-                                  >
-                                    <div 
-                                      className="flex items-center cursor-pointer"
-                                      onClick={() => handleAnswerSelect(q.id, option)}
-                                    >
-                                      {/* Radio button */}
-                                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${
-                                        isSelected 
-                                          ? 'bg-white border-[#E53E3E]' 
-                                          : 'bg-white border-[#CBD5E1]'
-                                      }`}>
-                                        <div className={`w-3 h-3 rounded-full ${
-                                          isSelected 
-                                            ? 'bg-[#E53E3E]' 
-                                            : 'bg-[#CBD5E1]'
-                                        }`}>
-                                        </div>
-                                      </div>
-                                      <span className="text-[15px] text-[#333] select-none" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                                        {option === "Other" && decisionTreeAnswers[q.id]?.startsWith("Other:") 
-                                          ? decisionTreeAnswers[q.id] 
-                                          : option}
-                                      </span>
-                                    </div>
-                                    
-                                    {/* Inline input for "Other" option */}
-                                    {option === "Other" && currentQuestionId === q.id && (
-                                      <input
-                                        type="text"
-                                        value={otherInputValue}
-                                        onChange={(e) => setOtherInputValue(e.target.value)}
-                                        onBlur={handleOtherSubmit}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            handleOtherSubmit();
-                                          } else if (e.key === 'Escape') {
-                                            handleOtherCancel();
-                                          }
-                                        }}
-                                        placeholder="Specify..."
-                                        className="ml-3 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
-                                        style={{ fontFamily: 'Open Sans, sans-serif' }}
-                                        autoFocus
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
