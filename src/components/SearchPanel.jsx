@@ -147,7 +147,9 @@ const SearchPanel = ({ onSearch }) => {
   }, []);
 
   // Navigate to full decision tree
-  const startDecisionTree = () => {
+  const startDecisionTree = (e) => {
+    e.preventDefault();
+    console.log('Navigating to decision tree...'); // Debug log
     navigate('/decision-tree');
   };
 
@@ -367,7 +369,8 @@ const SearchPanel = ({ onSearch }) => {
 
           <button
             onClick={startDecisionTree}
-            className="bg-[#015AB8] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#014a9f] transition-colors"
+            className="bg-[#015AB8] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#014a9f] transition-colors cursor-pointer"
+            style={{ border: 'none', outline: 'none' }}
           >
             Start Decision Tree (4 Questions)
           </button>
