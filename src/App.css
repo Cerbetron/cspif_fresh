@@ -1,0 +1,18 @@
+@import "tailwindcss";
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE 10+ */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+.checkbox-wrapper-33 .checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-direction: row-reverse; /* Move icon to right */
+}
+.checkbox-wrapper-33 .checkbox__symbol {
+  margin-left: calc(var(--s-small) * 0.7); /* Add margin to left */
+  margin-right: 0; /* Remove right margin */
+}
